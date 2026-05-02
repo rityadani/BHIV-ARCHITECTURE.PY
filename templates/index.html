@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BHIV Architecture Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="background-anim"></div>
+    <div class="container">
+        <header>
+            <h1>BHIV Architecture Dashboard</h1>
+            <p>Real-time insights and logs</p>
+        </header>
+
+        <section class="metrics-section">
+            <h2>Metrics Overview</h2>
+            <div class="charts-container">
+                <div class="chart-card">
+                    <canvas id="cpuChart"></canvas>
+                </div>
+                <div class="chart-card">
+                    <canvas id="memoryChart"></canvas>
+                </div>
+                <div class="chart-card">
+                    <canvas id="requestChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <section class="logs-section">
+            <h2>Bucket Log Entries</h2>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Stage</th>
+                            <th>Trace ID</th>
+                            <th>Execution ID</th>
+                            <th>Details</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for entry in entries %}
+                        <tr>
+                            <td><span class="badge badge-{{ entry.stage|lower }}">{{ entry.stage }}</span></td>
+                            <td><code>{{ entry.trace_id }}</code></td>
+                            <td><code>{{ entry.execution_id }}</code></td>
+                            <td><pre>{{ entry.details | tojson(indent=2) }}</pre></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        const metricsData = {{ metrics | tojson }};
+        
+        const labels = metricsData.map(d => d.app_id);
+        const cpuData = metricsData.map(d => d.cpu_usage);
+        const memoryData = metricsData.map(d => d.memory_mb);
+        const requestData = metricsData.map(d => d.request_rate);
+
+        const chartOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { labels: { color: '#e2e8f0' } }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                    ticks: { color: '#94a3b8' }
+                },
+                x: {
+                    grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                    ticks: { color: '#94a3b8' }
+                }
+            }
+        };
+
+        new Chart(document.getElementById('cpuChart'), {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'CPU Usage (%)',
+                    data: cpuData,
+                    backgroundColor: 'rgba(99, 102, 241, 0.8)',
+                    borderColor: 'rgba(99, 102, 241, 1)',
+                    borderWidth: 1,
+                    borderRadius: 6
+                }]
+            },
+            options: chartOptions
+        });
+
+        new Chart(document.getElementById('memoryChart'), {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Memory Usage (MB)',
+                    data: memoryData,
+                    backgroundColor: 'rgba(16, 185, 129, 0.8)',
+                    borderColor: 'rgba(16, 185, 129, 1)',
+                    borderWidth: 1,
+                    borderRadius: 6
+                }]
+            },
+            options: chartOptions
+        });
+
+        new Chart(document.getElementById('requestChart'), {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Request Rate (req/s)',
+                    data: requestData,
+                    backgroundColor: 'rgba(236, 72, 153, 0.8)',
+                    borderColor: 'rgba(236, 72, 153, 1)',
+                    borderWidth: 1,
+                    borderRadius: 6
+                }]
+            },
+            options: chartOptions
+        });
+    </script>
+</body>
+</html>
